@@ -6,7 +6,7 @@ import { Send, User, Bot, Loader2, LogOut, KeyRound, Copy, Check, Download, Eye,
 import Link from "next/link";
 import { logout, CallChat } from "./actions/auth";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 
 interface Message {
   id: string;
