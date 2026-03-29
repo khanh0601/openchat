@@ -5,32 +5,14 @@ import { useRouter } from "next/navigation";
 import { Send, User, Bot, Loader2, LogOut, KeyRound, Copy, Check, Download, Eye, Code2 } from "lucide-react";
 import Link from "next/link";
 import { logout, CallChat } from "./actions/auth";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface Message {
   id: string;
   role: "user" | "bot";
   content: string;
   type?: "text" | "html";
-}
-
-// ---------- Syntax highlight HTML cơ bản ----------
-function highlightHtml(code: string): string {
-  const escaped = code
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-  return escaped
-    // HTML tags: <div, </div, <br
-    .replace(/(&lt;\/?)([\w-]+)/g, '<span style="color:#f97583">$1$2</span>')
-    // Attribute names before =
-    .replace(/ ([\w-]+)=/g, ' <span style="color:#79b8ff">$1</span>=')
-    // Quoted attribute values "..."
-    .replace(/=&quot;([^&]*)&quot;/g, '=<span style="color:#9ecbff">&quot;$1&quot;</span>')
-    // Quoted values with regular quotes that survived
-    .replace(/="([^"]*)"/g, '=<span style="color:#9ecbff">"$1"</span>')
-    // CSS comments /* */
-    .replace(/(\/\*[^*]*\*\/)/g, '<span style="color:#6a737d">$1</span>');
 }
 
 // ---------- HTML Code Block Component ----------
@@ -103,11 +85,23 @@ function HtmlCodeBlock({ html, onPreview }: { html: string; onPreview: () => voi
 
       {/* Code block */}
       {showCode && (
-        <div className="overflow-auto max-h-72 p-4">
-          <pre
-            className="text-xs leading-relaxed font-mono text-neutral-300 whitespace-pre"
-            dangerouslySetInnerHTML={{ __html: highlightHtml(html) }}
-          />
+        <div className="overflow-auto max-h-72">
+          <SyntaxHighlighter
+            language="html"
+            style={vscDarkPlus}
+            wrapLines
+            wrapLongLines
+            showLineNumbers
+            customStyle={{
+              margin: 0,
+              borderRadius: 0,
+              fontSize: "0.75rem",
+              lineHeight: "1.6",
+              background: "#1e1e1e",
+            }}
+          >
+            {html}
+          </SyntaxHighlighter>
         </div>
       )}
     </div>
