@@ -60,7 +60,6 @@ export default function ChatScreen() {
 
       if (result.success) {
         const responseData = result.data;
-        console.log("API response:", JSON.stringify(responseData).slice(0, 200));
         // API trả về { "data": "<html>..." }
         const html = responseData?.html || responseData?.data;
         const reply = responseData?.reply || responseData?.message || responseData?.content;

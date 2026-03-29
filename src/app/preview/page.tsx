@@ -18,8 +18,17 @@ export default function PreviewPage() {
 
     const savedHtml = sessionStorage.getItem(`generated-html-${id}`);
     if (savedHtml) {
-      // Remove any markdown formatting if OpenAI accidentally included it
-      const cleanHtml = savedHtml.replace(/^```html\n?/, '').replace(/```\n?$/, '');
+      let cleanHtml = savedHtml;
+      // Bỏ markdown block nếu có
+      cleanHtml = cleanHtml.replace(/^```html\n?/, '').replace(/```\n?$/, '');
+      // Nếu string còn chứa literal \n, \" (double-encoded) thì unescape
+      if (cleanHtml.includes('\\n') || cleanHtml.includes('\\"')) {
+        cleanHtml = cleanHtml
+          .replace(/\\n/g, '\n')
+          .replace(/\\t/g, '\t')
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, '\\');
+      }
       setHtmlContent(cleanHtml);
     } else {
       alert("Không tìm thấy dữ liệu trang. Vui lòng tạo lại.");
