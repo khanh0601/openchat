@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Send, User, Bot, Loader2, Code2, Play, LogOut, KeyRound } from "lucide-react";
+import { Send, User, Bot, Loader2, LogOut, KeyRound, Copy, Check, Download, Eye, Code2 } from "lucide-react";
 import Link from "next/link";
 import { logout, CallChat } from "./actions/auth";
 
@@ -10,9 +10,111 @@ interface Message {
   id: string;
   role: "user" | "bot";
   content: string;
-  type?: "text" | "html"; // html type means we can render the website output in an iframe
+  type?: "text" | "html";
 }
 
+// ---------- Syntax highlight HTML cơ bản ----------
+function highlightHtml(code: string): string {
+  const escaped = code
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  return escaped
+    // HTML tags: <div, </div, <br
+    .replace(/(&lt;\/?)([\w-]+)/g, '<span style="color:#f97583">$1$2</span>')
+    // Attribute names before =
+    .replace(/ ([\w-]+)=/g, ' <span style="color:#79b8ff">$1</span>=')
+    // Quoted attribute values "..."
+    .replace(/=&quot;([^&]*)&quot;/g, '=<span style="color:#9ecbff">&quot;$1&quot;</span>')
+    // Quoted values with regular quotes that survived
+    .replace(/="([^"]*)"/g, '=<span style="color:#9ecbff">"$1"</span>')
+    // CSS comments /* */
+    .replace(/(\/\*[^*]*\*\/)/g, '<span style="color:#6a737d">$1</span>');
+}
+
+// ---------- HTML Code Block Component ----------
+function HtmlCodeBlock({ html, onPreview }: { html: string; onPreview: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const [showCode, setShowCode] = useState(true);
+
+  const handleCopy = useCallback(async () => {
+    await navigator.clipboard.writeText(html);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [html]);
+
+  const handleDownload = useCallback(() => {
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "generated-website.html";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [html]);
+
+  return (
+    <div className="w-full rounded-xl overflow-hidden border border-[#3a3a3a] bg-[#1e1e1e] text-sm shadow-lg">
+      {/* Header bar */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#2a2a2a] border-b border-[#3a3a3a]">
+        <div className="flex items-center gap-2.5">
+          <Code2 className="w-4 h-4 text-emerald-400" />
+          <span className="text-neutral-300 font-medium text-xs">Generated Website · html</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {/* Toggle Code/Hide */}
+          <button
+            onClick={() => setShowCode((v) => !v)}
+            className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#3a3a3a] transition-colors"
+          >
+            <Code2 className="w-3.5 h-3.5" />
+            {showCode ? "Ẩn code" : "Xem code"}
+          </button>
+
+          {/* Copy */}
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#3a3a3a] transition-colors"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? "Đã sao chép" : "Sao chép"}
+          </button>
+
+          {/* Download */}
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#3a3a3a] transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Tải xuống
+          </button>
+
+          {/* Preview */}
+          <button
+            onClick={onPreview}
+            className="flex items-center gap-1.5 text-xs text-white font-medium px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 transition-colors ml-1"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Xem trước
+          </button>
+        </div>
+      </div>
+
+      {/* Code block */}
+      {showCode && (
+        <div className="overflow-auto max-h-72 p-4">
+          <pre
+            className="text-xs leading-relaxed font-mono text-neutral-300 whitespace-pre"
+            dangerouslySetInnerHTML={{ __html: highlightHtml(html) }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==================== Main Page ====================
 export default function ChatScreen() {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([
@@ -28,7 +130,6 @@ export default function ChatScreen() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Middleware đã kiểm tra token rồi, chỉ cần lấy thông tin hiển thị
     const stored = localStorage.getItem("user_username");
     setUsername(stored || "");
   }, []);
@@ -42,7 +143,6 @@ export default function ChatScreen() {
   };
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
@@ -93,7 +193,7 @@ export default function ChatScreen() {
 
   return (
     <div className="flex h-screen bg-[#212121] text-neutral-200 font-sans">
-      {/* Sidebar (Optional styling to look like ChatGPT) */}
+      {/* Sidebar */}
       <div className="w-64 bg-[#171717] flex-shrink-0 hidden md:flex flex-col border-r border-[#303030]">
         <div className="p-4">
           <button className="w-full flex items-center justify-start gap-3 bg-[#2f2f2f] hover:bg-[#3f3f3f] text-sm py-2 px-3 rounded-lg transition-colors">
@@ -104,9 +204,7 @@ export default function ChatScreen() {
           <p className="mb-2 font-semibold text-xs tracking-wider uppercase">Lịch sử</p>
           <div className="py-2 px-3 hover:bg-[#2f2f2f] rounded-lg cursor-pointer truncate">Website Đặt vé máy bay</div>
         </div>
-        {/* User menu - hover để hiện dropdown */}
         <div className="border-t border-[#303030] p-3 relative group">
-          {/* Dropdown menu - hiện khi hover vào khu vực user */}
           <div className="absolute bottom-full left-3 right-3 mb-1 bg-[#2f2f2f] border border-[#444] rounded-xl overflow-hidden shadow-lg
             opacity-0 translate-y-1 pointer-events-none
             group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto
@@ -128,8 +226,6 @@ export default function ChatScreen() {
               Đăng xuất
             </button>
           </div>
-
-          {/* User row - hover vào đây để hiện menu trên */}
           <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#2f2f2f] cursor-pointer transition-colors text-sm text-neutral-400">
             <User className="w-6 h-6 bg-neutral-700 rounded-full p-0.5 shrink-0" />
             <span className="truncate flex-1">{username || "User"}</span>
@@ -142,7 +238,6 @@ export default function ChatScreen() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full bg-[#212121] relative">
-        {/* Header (mobile) */}
         <div className="md:hidden h-12 flex items-center justify-center border-b border-[#303030] shrink-0 font-medium">
           Chat Hệ thống
         </div>
@@ -156,21 +251,13 @@ export default function ChatScreen() {
                   {msg.role === "user" ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
                 </div>
 
-                {/* Content Bubble */}
-                <div className={`flex flex-col max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                {/* Content */}
+                <div className={`flex flex-col ${msg.type === "html" ? "w-full max-w-[90%]" : "max-w-[85%]"} ${msg.role === "user" ? "items-end" : "items-start"}`}>
                   {msg.type === "html" ? (
-                    <div className="bg-[#2f2f2f] rounded-xl border border-[#404040] p-4 flex flex-col gap-3">
-                      <div className="flex items-center gap-2 text-brand font-medium pb-2 border-b border-[#404040]">
-                        <Code2 className="w-5 h-5" /> Mã nguồn Website đã được tạo
-                      </div>
-                      <p className="text-sm text-neutral-400">Website đã được biên dịch thành công dựa theo yêu cầu của bạn, bao gồm các cấu hình đăng nhập được áp dụng.</p>
-                      <button
-                        onClick={() => openPreview(msg.content)}
-                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg mt-2 transition"
-                      >
-                        <Play className="w-4 h-4 fill-white" /> Khởi chạy và xem trước (Sandbox)
-                      </button>
-                    </div>
+                    <HtmlCodeBlock
+                      html={msg.content}
+                      onPreview={() => openPreview(msg.content)}
+                    />
                   ) : (
                     <div className={`p-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user" ? "bg-[#2f2f2f] text-white" : "text-neutral-200"}`}>
                       {msg.content}
@@ -221,7 +308,6 @@ export default function ChatScreen() {
                 <Send className="w-4 h-4 mr-0.5 mt-0.5" />
               </button>
             </form>
-
           </div>
         </div>
       </div>
