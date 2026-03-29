@@ -60,8 +60,9 @@ export default function ChatScreen() {
 
       if (result.success) {
         const responseData = result.data;
-        const html = responseData?.html;
-        const reply = responseData?.reply || responseData?.message || responseData?.content || JSON.stringify(responseData);
+        // API trả về { "data": "<html>..." }
+        const html = responseData?.html || responseData?.data;
+        const reply = responseData?.reply || responseData?.message || responseData?.content;
         setMessages((prev) => [
           ...prev,
           {

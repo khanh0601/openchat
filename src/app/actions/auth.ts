@@ -152,7 +152,7 @@ export async function CallChat(message: string) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
-
+    console.log(`${getDomain()}/chat/call`);
     const res = await fetch(`${getDomain()}/chat/call`, {
       method: "POST",
       headers: {
