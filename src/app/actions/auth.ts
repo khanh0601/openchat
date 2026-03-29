@@ -147,3 +147,23 @@ export async function changePassword(old_password: string, new_password: string)
     return { success: false, error: "Lỗi kết nối đến máy chủ" };
   }
 }
+
+export async function CallChat(message: string) {
+  try {
+    const res = await fetch(`${getDomain()}/chat/call`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      return { success: false, error: errJson?.message || "chủ đề k hợp lệ" };
+    }
+    const data = await res.json();
+    return { success: true, error: null, data };
+  } catch (error) {
+    console.error("Register Error:", error);
+    return { success: false, error: "Lỗi kết nối đến máy chủ" };
+  }
+}

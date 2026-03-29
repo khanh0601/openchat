@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Send, User, Bot, Loader2, Code2, Play, LogOut, KeyRound } from "lucide-react";
 import Link from "next/link";
-import { logout } from "./actions/auth";
+import { logout, CallChat } from "./actions/auth";
 
 interface Message {
   id: string;
@@ -56,35 +56,26 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const username = localStorage.getItem("user_username");
-      const password = localStorage.getItem("user_password");
+      const result = await CallChat(userMsg.content);
 
-      // GỌI API EXTERNAL CỦA NGƯỜI DÙNG Ở ĐÂY
-      // Tạm thời gọi qua API Route nội bộ proxy
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topic: userMsg.content,
-          username,
-          password
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      if (result.success) {
+        const responseData = result.data;
+        const html = responseData?.html;
+        const reply = responseData?.reply || responseData?.message || responseData?.content || JSON.stringify(responseData);
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
             role: "bot",
-            content: data.reply || data.html || "Giao dịch thành công",
-            type: data.html ? "html" : "text"
-          }
+            content: html || reply || "Thành công",
+            type: html ? "html" : "text",
+          },
         ]);
       } else {
-        setMessages((prev) => [...prev, { id: Date.now().toString(), role: "bot", content: `Lỗi: ${data.error}` }]);
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now().toString(), role: "bot", content: `Lỗi: ${result.error}` },
+        ]);
       }
     } catch (err: any) {
       setMessages((prev) => [...prev, { id: Date.now().toString(), role: "bot", content: `Lỗi kết nối: ${err.message}` }]);
