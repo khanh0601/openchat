@@ -150,15 +150,22 @@ export async function changePassword(old_password: string, new_password: string)
 
 export async function CallChat(message: string) {
   try {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+
     const res = await fetch(`${getDomain()}/chat/call`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
       body: JSON.stringify({ message }),
     });
 
     if (!res.ok) {
       const errJson = await res.json().catch(() => ({}));
-      return { success: false, error: errJson?.message || "chủ đề k hợp lệ" };
+      console.error("CallChat API error:", res.status, JSON.stringify(errJson));
+      return { success: false, error: errJson?.message || errJson?.detail || `Lỗi ${res.status}` };
     }
     const data = await res.json();
     return { success: true, error: null, data };
