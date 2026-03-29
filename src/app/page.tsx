@@ -153,17 +153,19 @@ export default function ChatScreen() {
       const result = await CallChat(userMsg.content);
 
       if (result.success) {
-        const responseData = result.data;
-        // API trả về { "data": "<html>..." }
-        const html = responseData?.html || responseData?.data;
-        const reply = responseData?.reply || responseData?.message || responseData?.content;
+        const responseData = result.data as any;
+        // API có thể trả về object { data: "<html>..." } HOẶC trả về thẳng chuỗi HTML
+        const isRawHtml = typeof responseData === "string" && (responseData.includes("<html") || responseData.includes("<!DOCTYPE"));
+        const html = isRawHtml ? responseData : (responseData?.html || responseData?.data);
+        const reply = isRawHtml ? null : (responseData?.reply || responseData?.message || responseData?.content);
+        
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
             role: "bot",
             content: html || reply || "Thành công",
-            type: html ? "html" : "text",
+            type: html?.includes("<html") || html?.includes("<body") ? "html" : "text",
           },
         ]);
       } else {
